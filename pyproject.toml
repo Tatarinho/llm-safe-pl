@@ -1,0 +1,121 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "llm-safe-pl"
+version = "0.1.0.dev0"
+description = "Reversible PII anonymization for Polish documents, designed for LLM workflows."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+requires-python = ">=3.10"
+authors = [
+    { name = "Michal Piotrowski", email = "piotrowskimichalwfis@gmail.com" },
+]
+keywords = [
+    "pii",
+    "anonymization",
+    "privacy",
+    "polish",
+    "pesel",
+    "nip",
+    "regon",
+    "gdpr",
+    "llm",
+    "openai",
+    "anthropic",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Natural Language :: Polish",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Security",
+    "Topic :: Text Processing :: Linguistic",
+    "Typing :: Typed",
+]
+dependencies = [
+    "typer>=0.12",
+]
+
+[project.optional-dependencies]
+ner = ["spacy>=3.5,<4.0"]
+fake = ["faker>=20.0"]
+pdf = ["pdfplumber>=0.10"]
+all = ["llm-safe-pl[ner,fake,pdf]"]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "ruff>=0.6",
+    "mypy>=1.10",
+    "hypothesis>=6.100",
+]
+
+[project.scripts]
+llm-safe = "llm_safe_pl.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/llm_safe_pl"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/llm_safe_pl",
+    "tests",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "F",    # pyflakes
+    "I",    # isort
+    "UP",   # pyupgrade
+    "B",    # flake8-bugbear
+    "SIM",  # flake8-simplify
+    "RUF",  # ruff-specific
+]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true
+packages = ["llm_safe_pl"]
+mypy_path = "src"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = [
+    "--cov=llm_safe_pl",
+    "--cov-report=term-missing",
+    "--cov-fail-under=80",
+    "-ra",
+]
+
+[tool.coverage.run]
+source = ["src/llm_safe_pl"]
+branch = true
+omit = ["src/llm_safe_pl/__main__.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
