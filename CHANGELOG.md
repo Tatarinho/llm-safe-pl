@@ -19,6 +19,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `CONTRIBUTING.md` describing the pre-1.0 contribution policy, dev setup, required CI gates, and commit style.
 - `models.py`: concrete `PIIType` (12 members covering the 9 regex detectors plus PERSON/ORGANIZATION/LOCATION for NER), `Match` (frozen dataclass with `type`, `value`, `start`, `end`, `detector`), `Mapping` (bidirectional value↔token store with per-type counters, schema-versioned JSON serialization, and token format `[TYPE_NNN]`), `AnonymizeResult` (frozen container for text, mapping, matches).
 - `tests/test_models.py`: unit tests covering enum membership, Match immutability and hashability, Mapping counter allocation, cross-type independence, Unicode-safe JSON round-trip, schema-version rejection, and AnonymizeResult shape.
+- `validators/` package with strict checksum validators: `is_valid_pesel`, `is_valid_nip`, `is_valid_regon` (9- and 14-digit), `is_valid_luhn` (13-19 digit card numbers), `is_valid_iban` (generic mod-97 with SWIFT country-length registry covering ~80 countries).
+- `tests/test_validators/` with parametrized fixtures, property tests via `hypothesis` (generator-produces-valid, single-digit-mutation-breaks-validity), and coverage of all reject paths (wrong length, non-digit, lowercase, unknown country, invalid check digits, whitespace).
 
 ### Changed
 
