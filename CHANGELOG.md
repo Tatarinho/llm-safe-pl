@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-04-21
+
+### Added
+
+- User-facing `README.md` rewritten for the v0.1.0 release with working examples, supported-PII table, and an up-to-date roadmap.
+- `examples/`: `basic.py`, `openai_integration.py`, `anthropic_integration.py`, and `cli_usage.md`.
+- `docs/`: `quickstart.md`, `detectors.md`, `llm_workflow.md`, `limitations.md`.
+- `benchmarks/throughput.py`: rough docs-per-second baseline for regression detection.
+
+### Changed
+
+- Version bumped from `0.1.0.dev0` to `0.1.0`.
+
+## [0.1.0.dev0] - unreleased
+
 ### Added
 
 - Project scaffolding: `pyproject.toml` (hatchling), GitHub Actions CI, ruff, mypy (strict), pytest with coverage gate.
