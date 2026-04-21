@@ -7,7 +7,7 @@ implementation detail and may change without a major version bump.
 from llm_safe_pl.models import AnonymizeResult, Mapping, Match, PIIType
 from llm_safe_pl.shield import Shield
 
-__version__ = "0.1.0.dev0"
+__version__ = "0.1.0"
 
 __all__ = [
     "AnonymizeResult",

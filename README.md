@@ -2,7 +2,7 @@
 
 Reversible PII anonymization for Polish documents, designed for LLM workflows.
 
-> **Status: pre-alpha (v0.1.0.dev0).** The public API surface is locked; implementations are being added incrementally. The package installs and imports cleanly, but the detectors, validators, and anonymizer are not yet wired up. See [Roadmap](#roadmap) and [CHANGELOG.md](CHANGELOG.md).
+> **Status: alpha (v0.1.0).** Core regex + checksum detection, anonymization, deanonymization, and the CLI are implemented and tested (280+ tests, ~99% coverage). The optional spaCy NER recognizer for PERSON / ORGANIZATION / LOCATION is scheduled for v0.1.1. See [CHANGELOG.md](CHANGELOG.md) and [Roadmap](#roadmap).
 
 ---
 
@@ -20,72 +20,103 @@ Checksum validation (PESEL, NIP, REGON, Luhn, IBAN mod-97) is first-class, so va
 
 ## Installation
 
-Core install — stdlib + `typer` only, ~2 MB:
+Core install — stdlib + `typer` only:
 
 ```bash
 pip install llm-safe-pl
 ```
 
-With the optional spaCy NER recognizer for persons / organizations / locations:
+Optional spaCy-based NER (Phase 6, not yet released):
 
 ```bash
 pip install "llm-safe-pl[ner]"
 python -m spacy download pl_core_news_lg
 ```
 
-Everything at once:
-
-```bash
-pip install "llm-safe-pl[all]"
-```
-
 Requires Python 3.10+.
 
-## Target API (locked, not yet functional)
-
-The public surface — `Shield`, `Match`, `Mapping`, `AnonymizeResult`, `PIIType` — is frozen as of v0.1.0.dev0. Anything not in `__all__` is an implementation detail and may change without a major version bump.
+## Quick example — Python API
 
 ```python
 from llm_safe_pl import Shield
 
 shield = Shield()
+
 result = shield.anonymize(
-    "Jan Kowalski, PESEL 44051401359, tel. +48 600 123 456"
+    "Jan Kowalski ma PESEL 44051401359, NIP 526-000-12-46, email jan@example.pl."
 )
-# result.text    -> "[PERSON_001], PESEL [PESEL_001], tel. [PHONE_001]"
-# result.mapping -> reversible mapping (serializable to JSON)
-# result.matches -> list[Match] for audit
+# result.text    -> "Jan Kowalski ma PESEL [PESEL_001], NIP [NIP_001], email [EMAIL_001]."
+# result.mapping -> reversible Mapping object (JSON-serializable)
+# result.matches -> tuple[Match, ...] for audit
 
-# Send result.text to OpenAI, Anthropic, a local model — anywhere.
-llm_response = "... response containing [PERSON_001] ..."
+# Safe to send to an LLM now.
+# response = call_any_llm(result.text)
 
-final = shield.deanonymize(llm_response, result.mapping)
+restored = shield.deanonymize(result.text)
+# "Jan Kowalski ma PESEL 44051401359, NIP 526-000-12-46, email jan@example.pl."
 ```
 
-The same value always maps to the same token within a `Shield` instance, so `Jan Kowalski` referenced twice in a document gets the same `[PERSON_001]` both times.
+The same value always maps to the same token within a `Shield` instance, including across multiple `anonymize()` calls. Formatted identifiers (e.g. `526-000-12-46`) round-trip exactly — the dashes are preserved.
 
-## CLI (planned)
+PERSON detection (`Jan Kowalski` in the example) requires `pip install "llm-safe-pl[ner]"` and is part of Phase 6. Without the extra, names remain visible and structured identifiers (PESEL, NIP, IBAN, etc.) are tokenized.
+
+## Quick example — CLI
 
 ```bash
-llm-safe anonymize document.txt --output anon.txt --mapping mapping.json
-llm-safe deanonymize anon.txt --mapping mapping.json
-llm-safe detect document.txt --format json
+# Detect PII without modifying the file (JSON or tab-separated output)
+llm-safe detect document.txt
+llm-safe detect document.txt --format text
+
+# Anonymize: writes rewritten text and a reversible mapping
+llm-safe anonymize document.txt -o anon.txt -m mapping.json
+
+# Restore original values (prints to stdout, or use -o FILE)
+llm-safe deanonymize anon.txt -m mapping.json
 ```
 
-Subcommands land in Phase 5. Today only `llm-safe --help` works.
+The CLI reads UTF-8 (with or without BOM) and UTF-16 (when a BOM is present), so files produced by PowerShell's default `>` redirection work without manual conversion. Output is always canonical UTF-8.
+
+## What's supported
+
+| PII type | Format examples | Checksum validated |
+|----------|-----------------|-------------------|
+| PESEL | `44051401359` | ✅ |
+| NIP | `5260001246`, `526-000-12-46` | ✅ |
+| REGON | `123456785` (9-digit), `12345678500001` (14-digit) | ✅ |
+| ID card (dowód) | `ABC123456` | regex only |
+| Passport | `AB1234567` | regex only |
+| Phone | `+48 600 123 456`, `600-123-456` | — |
+| Email | `user@example.pl` | — |
+| IBAN | `PL61109010140000071219812874` (bare or 4-digit-grouped) | ✅ (mod-97, ~80 countries) |
+| Credit card | `4532 0151 1283 0366` (13-19 digits, various groupings) | ✅ (Luhn) |
+| Person / Organization / Location | via optional `[ner]` extra (Phase 6) | — |
+
+## Public API
+
+These are the only names exported from `llm_safe_pl`:
+
+```python
+from llm_safe_pl import Shield, Match, Mapping, AnonymizeResult, PIIType
+```
+
+Anything else is an implementation detail and may change without a major version bump.
 
 ## Key design choices
 
 - **Zero external dependencies in the core.** Detection, anonymization, and mapping run on stdlib alone. Heavy features (spaCy, Faker, pdfplumber) are opt-in extras.
 - **Checksums written from scratch.** PESEL, NIP, REGON, Luhn, mod-97 IBAN — the library's core value, not outsourced.
-- **Reversibility is a contract.** Every `anonymize()` call returns a `Mapping` that enables perfect restoration.
+- **Reversibility is a contract.** Every `anonymize()` call returns a `Mapping` that enables perfect restoration, preserving source formatting (dashes, spaces).
 - **Polish-first.** Native handling of Polish identifiers and, via the `[ner]` extra, Polish names and addresses through `pl_core_news_lg`.
 
-## Scope of v0.1
+## More examples and documentation
 
-**In:** 9 regex-based detectors with checksum validation (PESEL, NIP, REGON, ID card, passport, Polish phone, email, PL IBAN, credit card); `Anonymizer` / `Deanonymizer` / `Shield` classes; `Mapping` with JSON serialization; optional spaCy NER; CLI via Typer; >80% test coverage.
-
-**Deferred to v0.2+:** Faker-based fake substitution, PDF/DOCX parsing, LLM-as-detector fallback, REST API, Docker image, non-Polish languages.
+- [`examples/basic.py`](examples/basic.py) — minimal programmatic use.
+- [`examples/openai_integration.py`](examples/openai_integration.py) — full round-trip against OpenAI.
+- [`examples/anthropic_integration.py`](examples/anthropic_integration.py) — same for the Anthropic API.
+- [`docs/quickstart.md`](docs/quickstart.md) — 5-minute tour.
+- [`docs/detectors.md`](docs/detectors.md) — detector behavior reference.
+- [`docs/llm_workflow.md`](docs/llm_workflow.md) — the anonymize → LLM → deanonymize pattern in depth.
+- [`docs/limitations.md`](docs/limitations.md) — **read before shipping to production.** What the library does not do, and what it may miss.
 
 ## Development
 
@@ -107,23 +138,23 @@ mypy
 pytest
 ```
 
-The 80% coverage gate is enforced in `pyproject.toml` and fails the build if it drops.
+The 80% coverage gate is enforced in `pyproject.toml`.
 
 ## Roadmap
 
 - **Phase 0** — Scaffolding: packaging, CI, locked public API surface, tests green. **Done.**
-- **Phase 1** — `models.py`: real `Match`, `Mapping`, `AnonymizeResult`, full `PIIType` enum. **Next.**
-- **Phase 2** — Checksum validators: PESEL, NIP, REGON, Luhn, mod-97 IBAN.
-- **Phase 3** — Nine regex + checksum detectors.
-- **Phase 4** — `Anonymizer` / `Deanonymizer` with consistent tokens.
-- **Phase 5** — `Shield` facade + CLI subcommands.
-- **Phase 6** — Optional spaCy NER recognizer.
-- **Release** — v0.1.0 to PyPI.
+- **Phase 1** — `models.py`: `Match`, `Mapping`, `AnonymizeResult`, `PIIType`. **Done.**
+- **Phase 2** — Checksum validators: PESEL, NIP, REGON, Luhn, mod-97 IBAN. **Done.**
+- **Phase 3** — Nine regex + checksum detectors. **Done.**
+- **Phase 4** — `Anonymizer` / `Deanonymizer` with consistent tokens. **Done.**
+- **Phase 5** — `Shield` facade + CLI subcommands. **Done.**
+- **Phase 6** — Optional spaCy NER recognizer. *Next — planned for v0.1.1.*
+- **v0.2.0+** — Faker-based fake substitution, PDF/DOCX parsing, broader IBAN detector scope.
 
 ## Non-goals
 
 - Not a SaaS, browser extension, or GUI — this is a Python library.
-- Not a legal compliance product. The library is a technical tool; compliance is the user's responsibility.
+- Not a legal compliance product. The library is a technical tool; compliance is the user's responsibility. See [`docs/limitations.md`](docs/limitations.md).
 - Not optimized for non-Polish text.
 - Not reimplementing PDF parsing, HTTP servers, or GUI frameworks that belong in separate libraries.
 
