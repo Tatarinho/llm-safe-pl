@@ -188,6 +188,25 @@ def round_trip_mapping() -> Mapping:
     return Mapping()
 
 
+class TestAnonymizerDetectMethod:
+    def test_detect_returns_matches_without_allocating(self) -> None:
+        mapping = Mapping()
+        anon = Anonymizer(detectors=[PeselDetector()], mapping=mapping)
+        matches = anon.detect("PESEL 44051401359")
+        assert len(matches) == 1
+        assert matches[0].value == "44051401359"
+        assert len(mapping) == 0
+
+    def test_detect_resolves_overlaps(self) -> None:
+        anon = Anonymizer(
+            detectors=[_ShortAbcDetector(), _LongAbcdefDetector()],
+            mapping=Mapping(),
+        )
+        matches = anon.detect("ABCDEF")
+        assert len(matches) == 1
+        assert matches[0].value == "ABCDEF"
+
+
 class TestAnonymizerIntegration:
     def test_multi_detector_replacement_order_is_by_start(
         self, round_trip_mapping: Mapping
