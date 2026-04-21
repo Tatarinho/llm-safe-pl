@@ -27,12 +27,15 @@ class Anonymizer:
         self._mapping = mapping
         self._strategy = strategy
 
-    def anonymize(self, text: str) -> AnonymizeResult:
+    def detect(self, text: str) -> list[Match]:
+        """Find all PII matches with overlaps resolved, without mutating Mapping."""
         all_matches: list[Match] = []
         for detector in self._detectors:
             all_matches.extend(detector.detect(text))
+        return self._resolve_overlaps(all_matches)
 
-        selected = self._resolve_overlaps(all_matches)
+    def anonymize(self, text: str) -> AnonymizeResult:
+        selected = self.detect(text)
         selected.sort(key=lambda m: m.start)
 
         parts: list[str] = []
