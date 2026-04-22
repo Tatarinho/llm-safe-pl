@@ -25,7 +25,6 @@ class Anonymizer:
     ) -> None:
         self._detectors = detectors
         self._mapping = mapping
-        self._strategy = strategy
 
     def detect(self, text: str) -> list[Match]:
         """Find all PII matches with overlaps resolved, without mutating Mapping."""
