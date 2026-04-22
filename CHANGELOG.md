@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.1.0] - 2026-04-21
+## [0.1.0] - 2026-04-22
 
 ### Added
 
@@ -15,10 +15,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `examples/`: `basic.py`, `openai_integration.py`, `anthropic_integration.py`, and `cli_usage.md`.
 - `docs/`: `quickstart.md`, `detectors.md`, `llm_workflow.md`, `limitations.md`.
 - `benchmarks/throughput.py`: rough docs-per-second baseline for regression detection.
+- `[project.urls]` in `pyproject.toml` (Homepage, Repository, Issues, Changelog) so the PyPI sidebar is populated on first publish.
+- `llm-safe --version` / `-V` flag: prints the canonical `__version__` and exits.
+- CLI stdin/stdout pipeline support — every subcommand accepts `-` as the input path (read from stdin); `deanonymize --output -` means explicit stdout. `--mapping` remains file-only. `examples/cli_usage.md` updated with a Stdin/stdout section.
+- Round-trip property tests (`tests/test_roundtrip_property.py`) driven by Hypothesis — two strategies (arbitrary safe text; interleaved valid PII samples) verify `deanonymize(anonymize(x).text) == x`.
+- `Concurrency and thread safety` section in `docs/limitations.md` plus a matching paragraph on the `Mapping` docstring documenting non-thread-safety and safe-usage patterns.
 
 ### Changed
 
 - Version bumped from `0.1.0.dev0` to `0.1.0`.
+- `__version__` now derives from installed package metadata (`importlib.metadata.version("llm-safe-pl")`) instead of a hardcoded literal, so `pyproject.toml` is the single source of truth.
+- Dropped unused `self._strategy` storage in `Anonymizer`; the constructor keeps the `strategy` parameter for forward-compat with future MASK/FAKE variants (see `strategies.py`).
+- Tightened the README "dependencies" bullet — `typer` is a required install-time dep (used by the CLI); the core modules remain stdlib-only.
+- Fixed the `<your-user>` placeholder in the README clone URL to the actual GitHub org (`Tatarinho`).
 
 ## [0.1.0.dev0] - unreleased
 
