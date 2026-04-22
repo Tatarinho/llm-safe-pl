@@ -45,6 +45,12 @@ dependencies = [
     "typer>=0.12",
 ]
 
+[project.urls]
+Homepage = "https://github.com/Tatarinho/llm-safe-pl"
+Repository = "https://github.com/Tatarinho/llm-safe-pl"
+Issues = "https://github.com/Tatarinho/llm-safe-pl/issues"
+Changelog = "https://github.com/Tatarinho/llm-safe-pl/blob/main/CHANGELOG.md"
+
 [project.optional-dependencies]
 ner = ["spacy>=3.5,<4.0"]
 fake = ["faker>=20.0"]
