@@ -85,6 +85,31 @@ The CLI accepts UTF-8 (with or without BOM) and UTF-16 (with BOM). BOM-less non-
 
 Detectors are whitespace-sensitive for the phone, IBAN, and credit card formats. A PESEL split across a line break (`44051401\n359`) is not detected.
 
+## Threat model
+
+`llm-safe-pl` protects against one specific scenario: **a Polish-language document leaves your process and reaches a third party (typically an LLM vendor) along with the identifiers it contains.** The library rewrites structured identifiers into tokens before egress and restores them locally after the response returns.
+
+### What it defends against
+
+- A passive LLM vendor (or anyone reading prompt/response logs) learning the raw value of a PESEL, NIP, REGON, IBAN, card number, ID card, passport, phone, or email from the prompt text.
+- The same leak via a log aggregator, a debug dump, or an accidental commit of a document you processed — if you ran `Shield.anonymize` first, the dumped text contains tokens, not originals.
+
+### What it does NOT defend against
+
+- **An attacker who has both the anonymized text and the `Mapping` file.** The Mapping is a lookup table from tokens back to PII. Treat it with the same sensitivity as the original data — don't commit it, don't send it to the vendor, don't log it.
+- **Inference from residual context.** Dates, employment history, relationships, medical descriptions, rare diagnoses, or any cluster of small facts can re-identify an individual even with every PESEL and NIP tokenized. Redaction is one layer; linkability analysis is another.
+- **PII types the library does not detect.** Names, organizations, and locations without the `[ner]` extra; street addresses, landline phones with parens, dates of birth, legacy bank account formats, non-Polish identifiers. See the rest of this document for the full list.
+- **Active adversaries inside your process.** If a compromised dependency or malicious import runs before `Shield.anonymize`, the raw document is already in memory.
+- **Side channels outside the prompt body.** Request metadata, IP address, timing, response-size-based inference, retained billing records.
+
+### Assumptions
+
+- The Mapping never leaves the process boundary that owns the original PII.
+- The caller has validated that the document classes they run through `Shield` fall inside the scope of the nine built-in detectors (plus NER if `[ner]` is installed).
+- The LLM vendor is a passive adversary — it may log, cache, or train on prompts, but is not specifically targeting your workflow.
+
+If any of those assumptions is wrong for your deployment, the library alone does not close the gap.
+
 ## Concurrency and thread safety
 
 Neither `Mapping` nor `Shield` is thread-safe. `Mapping.token_for` mutates a shared counter and two dicts without synchronization, so concurrent `anonymize()` calls on the same `Shield` can corrupt state, drop tokens, or produce duplicate tokens for distinct values.
