@@ -6,13 +6,15 @@ UTF-16 LE by default) and strict on write (UTF-8 without BOM, the canonical
 modern default). Files without a BOM that are not UTF-8 are rejected
 loudly — silent guessing at encodings leaks data.
 
-``deanonymize`` prints to stdout when ``--output`` is omitted; ``detect``
-always prints to stdout.
+All three subcommands accept ``-`` as the input path to read from stdin;
+``deanonymize --output -`` additionally means "write to stdout" (equivalent
+to omitting ``--output``). ``detect`` always prints to stdout.
 """
 
 from __future__ import annotations
 
 import json
+import sys
 from pathlib import Path
 from typing import Annotated
 
@@ -50,9 +52,12 @@ def _root(
     """llm-safe-pl — reversible PII anonymization for Polish documents."""
 
 
-def _read_text(path: Path) -> str:
-    """Read a text file, accepting UTF-8 (±BOM) and UTF-16 (±endianness) with BOM."""
-    data = path.read_bytes()
+def _read_text(source: Path) -> str:
+    """Read text from a file path, or from stdin when ``source`` is ``-``.
+
+    Accepts UTF-8 (±BOM) and UTF-16 (±endianness) with BOM in either case.
+    """
+    data = sys.stdin.buffer.read() if str(source) == "-" else source.read_bytes()
     if data[:2] in (b"\xff\xfe", b"\xfe\xff"):
         return data.decode("utf-16")
     return data.decode("utf-8-sig")
@@ -60,7 +65,7 @@ def _read_text(path: Path) -> str:
 
 @app.command("anonymize")
 def anonymize_cmd(
-    input_file: Annotated[Path, typer.Argument(help="Text file to anonymize.")],
+    input_file: Annotated[Path, typer.Argument(help="Text file to anonymize (use - for stdin).")],
     output: Annotated[Path, typer.Option("--output", "-o", help="Path for the anonymized text.")],
     mapping: Annotated[
         Path, typer.Option("--mapping", "-m", help="Path to write the Mapping JSON.")
@@ -76,14 +81,14 @@ def anonymize_cmd(
 
 @app.command("deanonymize")
 def deanonymize_cmd(
-    input_file: Annotated[Path, typer.Argument(help="Anonymized text file.")],
+    input_file: Annotated[Path, typer.Argument(help="Anonymized text file (use - for stdin).")],
     mapping: Annotated[
         Path,
         typer.Option("--mapping", "-m", help="Mapping JSON produced by `anonymize`."),
     ],
     output: Annotated[
         Path | None,
-        typer.Option("--output", "-o", help="Write restored text here (stdout if omitted)."),
+        typer.Option("--output", "-o", help="Write restored text here (stdout if omitted or -)."),
     ] = None,
 ) -> None:
     """Deanonymize a text file using a saved mapping."""
@@ -91,15 +96,15 @@ def deanonymize_cmd(
     loaded_mapping = Mapping.from_json(_read_text(mapping))
     shield = Shield(mapping=loaded_mapping)
     restored = shield.deanonymize(text)
-    if output is not None:
-        output.write_text(restored, encoding="utf-8")
-    else:
+    if output is None or str(output) == "-":
         typer.echo(restored)
+    else:
+        output.write_text(restored, encoding="utf-8")
 
 
 @app.command("detect")
 def detect_cmd(
-    input_file: Annotated[Path, typer.Argument(help="File to scan for PII.")],
+    input_file: Annotated[Path, typer.Argument(help="File to scan for PII (use - for stdin).")],
     output_format: Annotated[
         str, typer.Option("--format", "-f", help="Output format: json or text.")
     ] = "json",

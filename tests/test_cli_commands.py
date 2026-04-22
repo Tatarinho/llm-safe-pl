@@ -175,6 +175,72 @@ class TestDetectCommand:
         assert json.loads(result.output) == []
 
 
+class TestStdinStdout:
+    """CLI accepts `-` as input path (stdin) and deanonymize `-o -` as stdout."""
+
+    def test_anonymize_reads_from_stdin(self, runner: CliRunner, tmp_path: Path) -> None:
+        output_file = tmp_path / "out.txt"
+        mapping_file = tmp_path / "mapping.json"
+
+        result = runner.invoke(
+            app,
+            ["anonymize", "-", "-o", str(output_file), "-m", str(mapping_file)],
+            input="PESEL 44051401359",
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "[PESEL_001]" in output_file.read_text(encoding="utf-8")
+
+    def test_deanonymize_reads_from_stdin(self, runner: CliRunner, tmp_path: Path) -> None:
+        in_file = tmp_path / "in.txt"
+        in_file.write_text("44051401359", encoding="utf-8")
+        anon_file = tmp_path / "anon.txt"
+        mapping_file = tmp_path / "mapping.json"
+        runner.invoke(
+            app,
+            ["anonymize", str(in_file), "-o", str(anon_file), "-m", str(mapping_file)],
+        )
+        anon_text = anon_file.read_text(encoding="utf-8")
+
+        result = runner.invoke(
+            app,
+            ["deanonymize", "-", "-m", str(mapping_file)],
+            input=anon_text,
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "44051401359" in result.output
+
+    def test_deanonymize_explicit_stdout_dash(self, runner: CliRunner, tmp_path: Path) -> None:
+        in_file = tmp_path / "in.txt"
+        in_file.write_text("44051401359", encoding="utf-8")
+        anon_file = tmp_path / "anon.txt"
+        mapping_file = tmp_path / "mapping.json"
+        runner.invoke(
+            app,
+            ["anonymize", str(in_file), "-o", str(anon_file), "-m", str(mapping_file)],
+        )
+
+        result = runner.invoke(
+            app,
+            ["deanonymize", str(anon_file), "-m", str(mapping_file), "-o", "-"],
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "44051401359" in result.output
+
+    def test_detect_reads_from_stdin(self, runner: CliRunner) -> None:
+        result = runner.invoke(
+            app,
+            ["detect", "-"],
+            input="PESEL 44051401359",
+        )
+
+        assert result.exit_code == 0, result.output
+        data = json.loads(result.output)
+        assert data[0]["value"] == "44051401359"
+
+
 class TestInputEncoding:
     """CLI read-side tolerates UTF-8 (±BOM) and UTF-16 (±endianness with BOM)."""
 
