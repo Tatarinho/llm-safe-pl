@@ -121,7 +121,7 @@ Anything else is an implementation detail and may change without a major version
 ## Development
 
 ```bash
-git clone https://github.com/<your-user>/llm-safe-pl.git
+git clone https://github.com/Tatarinho/llm-safe-pl.git
 cd llm-safe-pl
 python -m venv .venv
 .venv\Scripts\activate          # Windows
