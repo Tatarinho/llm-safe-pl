@@ -1,5 +1,10 @@
 # llm-safe-pl
 
+[![PyPI version](https://img.shields.io/pypi/v/llm-safe-pl.svg)](https://pypi.org/project/llm-safe-pl/)
+[![Python versions](https://img.shields.io/pypi/pyversions/llm-safe-pl.svg)](https://pypi.org/project/llm-safe-pl/)
+[![Tests](https://github.com/Tatarinho/llm-safe-pl/actions/workflows/tests.yml/badge.svg)](https://github.com/Tatarinho/llm-safe-pl/actions/workflows/tests.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 Reversible PII anonymization for Polish documents, designed for LLM workflows.
 
 > **Status: alpha (v0.1.0).** Core regex + checksum detection, anonymization, deanonymization, and the CLI are implemented and tested (280+ tests, ~99% coverage). The optional spaCy NER recognizer for PERSON / ORGANIZATION / LOCATION is scheduled for v0.1.1. See [CHANGELOG.md](CHANGELOG.md) and [Roadmap](#roadmap).
