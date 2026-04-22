@@ -85,6 +85,17 @@ The CLI accepts UTF-8 (with or without BOM) and UTF-16 (with BOM). BOM-less non-
 
 Detectors are whitespace-sensitive for the phone, IBAN, and credit card formats. A PESEL split across a line break (`44051401\n359`) is not detected.
 
+## Concurrency and thread safety
+
+Neither `Mapping` nor `Shield` is thread-safe. `Mapping.token_for` mutates a shared counter and two dicts without synchronization, so concurrent `anonymize()` calls on the same `Shield` can corrupt state, drop tokens, or produce duplicate tokens for distinct values.
+
+If you need to run anonymization from multiple threads:
+
+- Use one `Shield` per thread (each with its own `Mapping`). This is the simplest correct option.
+- Or serialize access to a shared `Shield` with an external lock (e.g. `threading.Lock`).
+
+Across processes, persist and reload per-worker `Mapping`s via `Mapping.to_json` / `Mapping.from_json` when you need consistent tokens for the same input.
+
 ## Legal and compliance limitations
 
 `llm-safe-pl` is a **technical tool for redacting specific patterns of data before it leaves your process**. It is not:

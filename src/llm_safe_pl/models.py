@@ -51,6 +51,10 @@ class Mapping:
     Tokens follow the format ``[TYPE_NNN]`` with a zero-padded 3-digit counter
     that grows beyond 3 digits without wrapping (e.g. ``[PESEL_1000]``). Within
     a single Mapping, the same (type, value) pair always yields the same token.
+
+    Not thread-safe: ``token_for`` mutates the forward/reverse dicts and the
+    per-type counter without locking. Do not share a Mapping (or the Shield
+    that owns it) across threads unless the caller serializes writes.
     """
 
     SCHEMA_VERSION = 1
