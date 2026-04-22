@@ -18,6 +18,7 @@ from typing import Annotated
 
 import typer
 
+from llm_safe_pl import __version__
 from llm_safe_pl.models import Mapping
 from llm_safe_pl.shield import Shield
 
@@ -25,6 +26,28 @@ app = typer.Typer(
     help="llm-safe-pl — reversible PII anonymization for Polish documents.",
     no_args_is_help=True,
 )
+
+
+def _version_callback(value: bool) -> None:
+    if value:
+        typer.echo(__version__)
+        raise typer.Exit()
+
+
+@app.callback()
+def _root(
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            "-V",
+            callback=_version_callback,
+            is_eager=True,
+            help="Show the version and exit.",
+        ),
+    ] = False,
+) -> None:
+    """llm-safe-pl — reversible PII anonymization for Polish documents."""
 
 
 def _read_text(path: Path) -> str:

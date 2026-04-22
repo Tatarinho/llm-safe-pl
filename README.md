@@ -103,7 +103,7 @@ Anything else is an implementation detail and may change without a major version
 
 ## Key design choices
 
-- **Zero external dependencies in the core.** Detection, anonymization, and mapping run on stdlib alone. Heavy features (spaCy, Faker, pdfplumber) are opt-in extras.
+- **Minimal dependencies.** Detection, anonymization, and mapping run on stdlib alone; `typer` (used by the CLI) is the only required install-time dep. Heavy features (spaCy, Faker, pdfplumber) are opt-in extras.
 - **Checksums written from scratch.** PESEL, NIP, REGON, Luhn, mod-97 IBAN — the library's core value, not outsourced.
 - **Reversibility is a contract.** Every `anonymize()` call returns a `Mapping` that enables perfect restoration, preserving source formatting (dashes, spaces).
 - **Polish-first.** Native handling of Polish identifiers and, via the `[ner]` extra, Polish names and addresses through `pl_core_news_lg`.
