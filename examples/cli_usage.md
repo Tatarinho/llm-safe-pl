@@ -73,6 +73,23 @@ curl -sS https://api.example.com/llm \
 llm-safe deanonymize llm_response.txt -m map.json -o final.txt
 ```
 
+## Stdin / stdout pipelines
+
+Every subcommand accepts `-` as the input path, meaning "read from stdin". `deanonymize --output -` additionally means "write to stdout" (equivalent to omitting `--output`).
+
+```bash
+# Anonymize from stdin, text and mapping still go to files.
+echo "PESEL 44051401359" | llm-safe anonymize - -o anon.txt -m map.json
+
+# Deanonymize from stdin; restored text goes to stdout.
+cat anon.txt | llm-safe deanonymize - -m map.json
+
+# Detect on stdin.
+echo "PESEL 44051401359" | llm-safe detect -
+```
+
+Note: `--mapping` is always a file path. Piping structural state between commands is more footgun than feature.
+
 ## File encodings
 
 The CLI accepts UTF-8 (with or without BOM) and UTF-16 LE/BE when a BOM is present. On Windows PowerShell 5.1, `echo "..." > file.txt` produces UTF-16 LE with BOM by default — that just works.
