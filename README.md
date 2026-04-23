@@ -4,6 +4,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/llm-safe-pl.svg)](https://pypi.org/project/llm-safe-pl/)
 [![Tests](https://github.com/Tatarinho/llm-safe-pl/actions/workflows/tests.yml/badge.svg)](https://github.com/Tatarinho/llm-safe-pl/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Tatarinho/llm-safe-pl/blob/main/notebooks/quickstart.ipynb)
 
 Reversible PII anonymization for Polish documents, designed for LLM workflows.
 
@@ -65,6 +66,12 @@ The same value always maps to the same token within a `Shield` instance, includi
 
 PERSON detection (`Jan Kowalski` in the example) requires `pip install "llm-safe-pl[ner]"` and is part of Phase 6. Without the extra, names remain visible and structured identifiers (PESEL, NIP, IBAN, etc.) are tokenized.
 
+## Try it live in Colab
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/Tatarinho/llm-safe-pl/blob/main/notebooks/quickstart.ipynb)
+
+No install needed — the notebook walks through a full anonymize → LLM → deanonymize round-trip in a Polish customer-service scenario.
+
 ## Quick example — CLI
 
 ```bash
@@ -115,6 +122,7 @@ Anything else is an implementation detail and may change without a major version
 
 ## More examples and documentation
 
+- [`notebooks/quickstart.ipynb`](notebooks/quickstart.ipynb) — interactive Colab walk-through of the full round-trip. [Open in Colab ↗](https://colab.research.google.com/github/Tatarinho/llm-safe-pl/blob/main/notebooks/quickstart.ipynb).
 - [`examples/basic.py`](examples/basic.py) — minimal programmatic use.
 - [`examples/openai_integration.py`](examples/openai_integration.py) — full round-trip against OpenAI.
 - [`examples/anthropic_integration.py`](examples/anthropic_integration.py) — same for the Anthropic API.
