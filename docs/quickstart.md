@@ -59,6 +59,41 @@ A few things to notice:
 - `shield.deanonymize(text)` with no mapping argument uses the Shield's own mapping. Pass an explicit `Mapping` to deanonymize against a saved state.
 - Detected PII formats are preserved: `526-000-12-46` stays dashed, `4532 0151 1283 0366` stays spaced. The round-trip reproduces the source byte-for-byte.
 
+## Reusing a Shield across unrelated documents
+
+Because the Mapping is shared across calls, processing two unrelated documents through the same Shield mixes their tokens. If the second document contains attacker-controlled text with a literal `[PESEL_001]` substring, `deanonymize` will substitute it with the *first* document's PESEL value. Use `Shield.reset()` between unrelated documents to drop the accumulated mapping:
+
+```python
+shield = Shield()
+
+# Document A — internal, trusted.
+result_a = shield.anonymize(doc_a)
+restored_a = shield.deanonymize(llm_response_a)
+
+# Discard A's tokens before touching B.
+shield.reset()
+
+# Document B — could be untrusted.
+result_b = shield.anonymize(doc_b)
+restored_b = shield.deanonymize(llm_response_b)
+```
+
+`reset()` keeps the detector list and any `max_input_bytes` setting; it only drops the Mapping. Equivalent to instantiating a fresh `Shield()` but cheaper if you have a custom detector list.
+
+## Guarding against oversized input
+
+`Shield.anonymize` allocates O(n) memory in input size. For pipelines that ingest untrusted text, set `max_input_bytes` to refuse oversized inputs at the boundary instead of letting them OOM the process:
+
+```python
+# Refuse anything over 1 MiB.
+shield = Shield(max_input_bytes=1024 * 1024)
+
+shield.anonymize(very_large_text)
+# ValueError: input is 5242880 bytes; max_input_bytes=1048576
+```
+
+Default is unbounded. Set it whenever the upstream caller can't be trusted.
+
 ## CLI
 
 Everything the Python API does is also available from a shell:
@@ -70,11 +105,14 @@ llm-safe detect document.txt
 # Anonymize; writes two files.
 llm-safe anonymize document.txt -o anon.txt -m mapping.json
 
+# Re-running on the same outputs requires --force (since v0.2.0).
+llm-safe anonymize document.txt -o anon.txt -m mapping.json --force
+
 # Restore originals.
 llm-safe deanonymize anon.txt -m mapping.json -o restored.txt
 ```
 
-See [`cli_usage.md`](../examples/cli_usage.md) for more.
+Each subcommand also supports `--max-bytes` (default 64 MiB) to refuse oversized stdin or file inputs. See [`cli_usage.md`](../examples/cli_usage.md) for more.
 
 ## Saving and loading mappings
 
@@ -95,13 +133,15 @@ shield = Shield(mapping=loaded)
 # Any anonymize() call will reuse tokens already allocated in `loaded`.
 ```
 
+`Mapping.from_dict` / `from_json` validate every field at load time: token shape, type-prefix consistency, and counter coverage of issued tokens. Tampered or hand-edited mapping JSON raises `ValueError` rather than loading silently. Mappings produced by `Mapping.to_json` always round-trip cleanly.
+
 ## What Shield detects
 
 - PESEL, NIP, REGON (Polish government IDs, all checksum-validated)
-- Polish ID card (dowód osobisty), passport (regex-only for v0.1)
+- Polish ID card (dowód osobisty), passport (regex-only)
 - Phone, email, PL IBAN, credit card (Luhn-validated, 13-19 digits)
 
-Person, organization, and location names require the optional `[ner]` extra — planned for v0.1.1.
+Person, organization, and location names require the optional `[ner]` extra — scheduled for a later 0.x release.
 
 ## Next steps
 

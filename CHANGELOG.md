@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-04-26
+
+Service-pack release: a large algorithmic-perf fix and a security/hardening
+sweep on the public API. Same library, same nine detectors, same checksums —
+just much faster on large documents and stricter about untrusted inputs.
+
+### Added
+
+- `Shield.reset()`: discard the accumulated Mapping (counters and entries) without rebuilding the Shield. Use between unrelated documents or users to prevent cross-document token leakage on `deanonymize`. Detector list and `max_input_bytes` are preserved.
+- `Shield(max_input_bytes=...)` constructor option: refuses inputs whose UTF-8 byte length exceeds the cap. Default unbounded; recommended for pipelines that ingest untrusted text since `Shield.anonymize` allocates O(n) memory in input size.
+- CLI `--force` flag on `anonymize` and `deanonymize`: required to overwrite an existing output or mapping file. Without it the command refuses with a clear error instead of silently clobbering.
+- CLI `--max-bytes` flag on every subcommand (default 64 MiB): refuses pathologically large stdin or file inputs without crashing the process.
+- `Shield` docstring documents thread-safety and the cross-document leakage class.
+- `tests/test_security_hardening.py`: 24 new tests covering `Mapping.from_dict` validation paths, `Anonymizer` constructor enforcement, `Shield` input-size guard and reset behavior, and `Detector.__init_subclass__` enforcement.
+- `tests/test_overlap_property.py`: Hypothesis-driven property test asserting the new bisect-based overlap resolution is set-equivalent to the previous quadratic algorithm over arbitrary match sets.
+
+### Changed
+
+- `Anonymizer._resolve_overlaps` now uses a `bisect_left`-based neighbor check instead of a linear `any(...)` scan over `taken`. Worst-case complexity drops from O(n²) to O(n log n) for the lookup; per-call insertion remains O(n) due to list shifts. On a 100 KiB synthetic document with ~4900 candidate matches the median `Shield.anonymize()` latency drops from ~1700 ms to ~70 ms (≈25× faster); 1 MiB inputs that previously timed the harness out now complete in ~1.5 s. Output is byte-identical to the previous algorithm.
+- `Mapping.from_dict` now validates every field at runtime: token shape (`[TYPE_NNN]`), token-prefix vs declared type, counter coverage of issued tokens, and the scalar types of values and counters. **Breaking** for callers that previously fed malformed JSON and relied on lenient acceptance — those calls now raise `ValueError`.
+- `Anonymizer.__init__` now rejects:
+  - Detector lists with duplicate `name` attributes (previously silently overwrote the priority dict and broke overlap-resolution determinism).
+  - `Strategy` values other than `Strategy.TOKEN` (the only implemented strategy in v0.1; passing anything else previously was a silent no-op). The strategy is also stored on the instance now, ready for future `MASK` / `FAKE` dispatch.
+- `Detector` base class now enforces `pii_type` and `name` presence at class-definition time via `__init_subclass__`. Subclasses missing either previously instantiated successfully and crashed on first `detect()` call.
+- CLI `anonymize` / `deanonymize` now refuse to overwrite an existing output or mapping file unless `--force` is passed. **Breaking** for scripts that relied on auto-overwrite — add `--force` to preserve previous behavior.
+- CLI `detect --format` is now case-insensitive (`JSON`, `Json`, `json` all accepted); previously only lowercase worked.
+- `Mapping` now uses `__slots__` and `Mapping.token_for` uses an f-string instead of `str.format`. Internal performance polish; no API change.
+- `Anonymizer` now caches the priority dict in `__init__` instead of rebuilding it on every `_resolve_overlaps` call. Internal; no API change.
+- `__version__` (in `__init__.py`) now falls back to a `"0.0.0+local"` sentinel when `importlib.metadata.version("llm-safe-pl")` raises `PackageNotFoundError`. This keeps `import llm_safe_pl` working when the source tree is loaded via `PYTHONPATH` without an editable install — useful for development workflows and CI checkout-only steps.
+- `examples/cli_usage.md` updated for the new `--force` and `--max-bytes` flags.
+- `docs/quickstart.md`, `docs/limitations.md`, and `README.md` updated to mention the new `Shield.reset` and `max_input_bytes` capabilities and to call out the breaking CLI behavior.
+
+### Fixed
+
+- Removed silent failure modes when a custom detector subclass omitted required class variables (now raised at class-definition time, see `Detector.__init_subclass__` change above).
+
+### Migration notes for 0.1.x → 0.2.0
+
+The two changes that may surprise existing users:
+
+1. **CLI overwrite now requires `--force`.** A cron job that runs
+   `llm-safe anonymize doc.txt -o out.txt -m map.json` daily will now fail on
+   the second run because `out.txt` already exists. Add `-f` / `--force`:
+   `llm-safe anonymize doc.txt -o out.txt -m map.json --force`.
+2. **`Mapping.from_dict` now raises on malformed JSON** that previously
+   loaded leniently. If you persist mappings from one process and load them
+   in another, mappings produced by 0.1.0 still load cleanly in 0.2.0
+   (round-trip is preserved); only hand-crafted or tampered JSON triggers
+   the new errors.
+
+If neither applies to you, 0.2.0 is a drop-in upgrade with a 25× speedup on
+larger documents and the new `Shield.reset()` / `max_input_bytes` options
+available when you want them.
+
 ## [0.1.0] - 2026-04-22
 
 ### Added

@@ -46,6 +46,17 @@ cat mapping.json
 
 Now it's safe to send `anonymized.txt` to any LLM API.
 
+Re-running on the same outputs requires `--force` (since v0.2.0). The CLI refuses to silently overwrite an existing `-o` or `-m` file:
+
+```bash
+llm-safe anonymize document.txt -o anonymized.txt -m mapping.json
+# Usage: llm-safe anonymize ...
+# Error: anonymized.txt exists; pass --force to overwrite
+
+llm-safe anonymize document.txt -o anonymized.txt -m mapping.json --force
+# (overwrites both)
+```
+
 ## Deanonymize
 
 Restore original values using a mapping produced by `anonymize`.
@@ -56,6 +67,9 @@ llm-safe deanonymize anonymized.txt -m mapping.json
 
 # To a file
 llm-safe deanonymize anonymized.txt -m mapping.json -o restored.txt
+
+# --force is required to overwrite an existing output file (since v0.2.0)
+llm-safe deanonymize anonymized.txt -m mapping.json -o restored.txt --force
 ```
 
 ## End-to-end round-trip in one shell
@@ -95,6 +109,17 @@ Note: `--mapping` is always a file path. Piping structural state between command
 The CLI accepts UTF-8 (with or without BOM) and UTF-16 LE/BE when a BOM is present. On Windows PowerShell 5.1, `echo "..." > file.txt` produces UTF-16 LE with BOM by default — that just works.
 
 Output is always canonical UTF-8 without BOM.
+
+## Input-size cap
+
+Every subcommand supports `--max-bytes` (default 64 MiB). Inputs larger than that are refused with a clear error instead of being slurped into memory. Useful when piping from an untrusted source:
+
+```bash
+# Refuse anything over 1 MiB.
+some_user_program | llm-safe anonymize - -o out.txt -m map.json --max-bytes $((1024 * 1024))
+```
+
+Set it lower than the default if you know your real inputs are bounded; raising it above 64 MiB is allowed but treats the host's RAM as the only ceiling.
 
 ## Help
 
