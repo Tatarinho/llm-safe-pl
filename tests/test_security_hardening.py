@@ -15,6 +15,7 @@ import pytest
 from llm_safe_pl.anonymizer import Anonymizer
 from llm_safe_pl.detectors.base import RegexDetector
 from llm_safe_pl.detectors.pesel import PeselDetector
+from llm_safe_pl.errors import InputSizeError, MappingError
 from llm_safe_pl.models import Mapping, PIIType
 from llm_safe_pl.shield import Shield
 from llm_safe_pl.strategies import Strategy
@@ -37,6 +38,12 @@ class TestMappingFromDictValidation:
 
     def test_rejects_non_dict(self) -> None:
         with pytest.raises(ValueError, match="expected a dict"):
+            Mapping.from_dict([])  # type: ignore[arg-type]
+
+    def test_raises_typed_mapping_error(self) -> None:
+        # MappingError is the typed exception; ValueError compatibility is
+        # preserved via multi-inheritance.
+        with pytest.raises(MappingError):
             Mapping.from_dict([])  # type: ignore[arg-type]
 
     def test_rejects_wrong_schema_version(self) -> None:
@@ -159,6 +166,12 @@ class TestShieldHardening:
         shield = Shield(max_input_bytes=10)
         with pytest.raises(ValueError, match="max_input_bytes"):
             shield.detect("This is far longer than 10 bytes of text")
+
+    def test_max_input_bytes_raises_typed_error(self) -> None:
+        # InputSizeError is the typed exception; ValueError catching still works.
+        shield = Shield(max_input_bytes=10)
+        with pytest.raises(InputSizeError, match="max_input_bytes"):
+            shield.anonymize("This is far longer than 10 bytes of text")
 
     def test_no_guard_by_default(self) -> None:
         shield = Shield()
