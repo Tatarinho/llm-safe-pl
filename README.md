@@ -8,7 +8,7 @@
 
 Reversible PII anonymization for Polish documents, designed for LLM workflows.
 
-> **Status: alpha (v0.1.0).** Core regex + checksum detection, anonymization, deanonymization, and the CLI are implemented and tested (280+ tests, ~99% coverage). The optional spaCy NER recognizer for PERSON / ORGANIZATION / LOCATION is scheduled for v0.1.1. See [CHANGELOG.md](CHANGELOG.md) and [Roadmap](#roadmap).
+> **Status: alpha (v0.2.0).** Core regex + checksum detection, anonymization, deanonymization, and the CLI are implemented and tested (319 tests, ~99% coverage). v0.2.0 is a service-pack release: ~25× faster `Shield.anonymize()` on documents with thousands of PII items, plus a security-hardening pass (strict `Mapping.from_dict` validation, `Shield(max_input_bytes=...)`, `Shield.reset()`, CLI `--force` / `--max-bytes`). The optional spaCy NER recognizer for PERSON / ORGANIZATION / LOCATION is still scheduled for a later 0.x release. See [CHANGELOG.md](CHANGELOG.md) and [Roadmap](#roadmap).
 
 ---
 
@@ -64,7 +64,9 @@ restored = shield.deanonymize(result.text)
 
 The same value always maps to the same token within a `Shield` instance, including across multiple `anonymize()` calls. Formatted identifiers (e.g. `526-000-12-46`) round-trip exactly — the dashes are preserved.
 
-PERSON detection (`Jan Kowalski` in the example) requires `pip install "llm-safe-pl[ner]"` and is part of Phase 6. Without the extra, names remain visible and structured identifiers (PESEL, NIP, IBAN, etc.) are tokenized.
+If you process unrelated documents (different users, different requests) through one Shield, call `shield.reset()` between them to drop the accumulated mapping and prevent cross-document token leakage. For pipelines that ingest untrusted text, pass `Shield(max_input_bytes=...)` to refuse oversized inputs at the boundary instead of letting them turn into an O(n) memory blowup.
+
+PERSON detection (`Jan Kowalski` in the example) requires `pip install "llm-safe-pl[ner]"` and is scheduled for a later 0.x release. Without the extra, names remain visible and structured identifiers (PESEL, NIP, IBAN, etc.) are tokenized.
 
 ## Try it live in Colab
 
@@ -82,11 +84,15 @@ llm-safe detect document.txt --format text
 # Anonymize: writes rewritten text and a reversible mapping
 llm-safe anonymize document.txt -o anon.txt -m mapping.json
 
+# Re-running on the same outputs requires --force (otherwise the CLI refuses
+# to overwrite, since v0.2.0)
+llm-safe anonymize document.txt -o anon.txt -m mapping.json --force
+
 # Restore original values (prints to stdout, or use -o FILE)
 llm-safe deanonymize anon.txt -m mapping.json
 ```
 
-The CLI reads UTF-8 (with or without BOM) and UTF-16 (when a BOM is present), so files produced by PowerShell's default `>` redirection work without manual conversion. Output is always canonical UTF-8.
+The CLI reads UTF-8 (with or without BOM) and UTF-16 (when a BOM is present), so files produced by PowerShell's default `>` redirection work without manual conversion. Output is always canonical UTF-8. Each subcommand also supports `--max-bytes` (default 64 MiB) to refuse pathologically large inputs.
 
 ## What's supported
 
@@ -155,14 +161,15 @@ The 80% coverage gate is enforced in `pyproject.toml`.
 
 ## Roadmap
 
-- **Phase 0** — Scaffolding: packaging, CI, locked public API surface, tests green. **Done.**
-- **Phase 1** — `models.py`: `Match`, `Mapping`, `AnonymizeResult`, `PIIType`. **Done.**
-- **Phase 2** — Checksum validators: PESEL, NIP, REGON, Luhn, mod-97 IBAN. **Done.**
-- **Phase 3** — Nine regex + checksum detectors. **Done.**
-- **Phase 4** — `Anonymizer` / `Deanonymizer` with consistent tokens. **Done.**
-- **Phase 5** — `Shield` facade + CLI subcommands. **Done.**
-- **Phase 6** — Optional spaCy NER recognizer. *Next — planned for v0.1.1.*
-- **v0.2.0+** — Faker-based fake substitution, PDF/DOCX parsing, broader IBAN detector scope.
+- **Phase 0** — Scaffolding: packaging, CI, locked public API surface, tests green. **Done in v0.1.0.**
+- **Phase 1** — `models.py`: `Match`, `Mapping`, `AnonymizeResult`, `PIIType`. **Done in v0.1.0.**
+- **Phase 2** — Checksum validators: PESEL, NIP, REGON, Luhn, mod-97 IBAN. **Done in v0.1.0.**
+- **Phase 3** — Nine regex + checksum detectors. **Done in v0.1.0.**
+- **Phase 4** — `Anonymizer` / `Deanonymizer` with consistent tokens. **Done in v0.1.0.**
+- **Phase 5** — `Shield` facade + CLI subcommands. **Done in v0.1.0.**
+- **v0.2.0** — Algorithmic perf fix (`Shield.anonymize()` ~25× faster on large docs), security-hardening pass (`Mapping.from_dict` strict validation, `Shield.reset()`, `Shield(max_input_bytes=...)`, CLI `--force` / `--max-bytes`). **Done.** See [CHANGELOG.md](CHANGELOG.md).
+- **Next 0.x** — Optional spaCy NER recognizer for PERSON / ORGANIZATION / LOCATION via `pip install "llm-safe-pl[ner]"`.
+- **Later** — Faker-based fake substitution, PDF/DOCX parsing, broader IBAN detector scope.
 
 ## Non-goals
 

@@ -13,7 +13,7 @@ from __future__ import annotations
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Iterator
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from llm_safe_pl.models import Match, PIIType
 
@@ -23,6 +23,19 @@ class Detector(ABC):
 
     pii_type: ClassVar[PIIType]
     name: ClassVar[str]
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        # Subclasses must declare ``pii_type`` and ``name``. ABC's
+        # ``@abstractmethod`` only enforces missing methods, not missing
+        # class variables — without this check, a subclass that forgets
+        # ``name`` would instantiate fine and crash at first ``detect``
+        # call. Caught at class-definition time instead.
+        if cls.__name__ in {"RegexDetector"}:
+            return  # the abstract regex helper isn't a concrete detector
+        for required in ("pii_type", "name"):
+            if not hasattr(cls, required):
+                raise TypeError(f"{cls.__name__} must define class variable {required!r}")
 
     @abstractmethod
     def detect(self, text: str) -> Iterator[Match]:

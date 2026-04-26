@@ -101,6 +101,24 @@ Detectors are whitespace-sensitive for the phone, IBAN, and credit card formats.
 - **PII types the library does not detect.** Names, organizations, and locations without the `[ner]` extra; street addresses, landline phones with parens, dates of birth, legacy bank account formats, non-Polish identifiers. See the rest of this document for the full list.
 - **Active adversaries inside your process.** If a compromised dependency or malicious import runs before `Shield.anonymize`, the raw document is already in memory.
 - **Side channels outside the prompt body.** Request metadata, IP address, timing, response-size-based inference, retained billing records.
+- **Cross-document leakage on round-trip via a long-lived Shield.** A single Shield's Mapping accumulates across every `anonymize()` call. If a process anonymizes document A (sensitive) and later runs `deanonymize` on document B (attacker-controlled) using the same Shield, any literal `[PESEL_001]` substring in B is substituted with A's PESEL. Call `Shield.reset()` between unrelated documents/users, or instantiate a fresh `Shield` per request.
+
+### v0.2.0 hardening you should opt into
+
+The library exposes three boundary controls. They are not enabled by default
+because they require a deployment decision; turn them on when you are
+processing untrusted text:
+
+- `Shield(max_input_bytes=...)` — refuses inputs whose UTF-8 byte length
+  exceeds the cap. Without it, `Shield.anonymize` allocates O(n) memory in
+  input size, so unbounded input is a denial-of-service vector.
+- `Shield.reset()` between unrelated calls — drops the accumulated Mapping
+  so cross-document leakage on round-trip cannot occur (see previous
+  section).
+- Persisted `Mapping` JSON is validated strictly on load
+  (`Mapping.from_dict` / `from_json` raise on tampered or malformed input).
+  This protects you from accepting a hostile mapping file that would
+  otherwise silently corrupt subsequent `deanonymize` calls.
 
 ### Assumptions
 
