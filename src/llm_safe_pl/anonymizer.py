@@ -9,6 +9,8 @@ stable priority via ``DEFAULT_DETECTORS`` order.
 
 from __future__ import annotations
 
+from bisect import bisect_left
+
 from llm_safe_pl.detectors.base import Detector
 from llm_safe_pl.models import AnonymizeResult, Mapping, Match
 from llm_safe_pl.strategies import Strategy
@@ -59,10 +61,20 @@ class Anonymizer:
             length = m.end - m.start
             return (-length, m.start, priority.get(m.detector, fallback))
 
+        # Invariant: ``taken`` stays sorted by start and pairwise non-overlapping.
+        # A new candidate can only overlap its left or right neighbor in start order,
+        # so a single bisect lookup checks both. Replaces an O(n^2) linear scan that
+        # dominated runtime on documents with thousands of PII items.
         taken: list[Match] = []
+        starts: list[int] = []
         for m in sorted(matches, key=sort_key):
-            if not any(_overlaps(m, t) for t in taken):
-                taken.append(m)
+            i = bisect_left(starts, m.start)
+            if i > 0 and taken[i - 1].end > m.start:
+                continue
+            if i < len(taken) and taken[i].start < m.end:
+                continue
+            starts.insert(i, m.start)
+            taken.insert(i, m)
         return taken
 
 
