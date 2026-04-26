@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `llm_safe_pl.errors` module with typed exception hierarchy: `LlmSafeError` (base), `MappingError` and `InputSizeError` (both also subclass `ValueError` for backwards compatibility), and `DetectorError` (also subclass of `RuntimeError`). All four are re-exported from the top-level package. See `docs/errors.md`.
+- `tests/corpora/` regression-corpus scaffolding with `pl_pii_positive/` and `pl_pii_negative/` directories. `tests/test_corpus.py` discovers `.txt`/`.json` pairs at collection time and asserts current detector behavior — adding more samples strengthens regression coverage without changing test code.
+
+### Changed
+
+- `Mapping.from_dict` / `from_json` now raise `MappingError` instead of bare `ValueError` (the new class still catches as `ValueError`, so existing handlers keep working).
+- `Shield.anonymize` / `detect` raise `InputSizeError` instead of bare `ValueError` when input exceeds `max_input_bytes` (still catches as `ValueError`).
+
 ## [0.2.0] - 2026-04-26
 
 Service-pack release: a large algorithmic-perf fix and a security/hardening

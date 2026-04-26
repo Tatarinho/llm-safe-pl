@@ -25,6 +25,7 @@ from llm_safe_pl.anonymizer import Anonymizer
 from llm_safe_pl.deanonymizer import Deanonymizer
 from llm_safe_pl.detectors import DEFAULT_DETECTORS
 from llm_safe_pl.detectors.base import Detector
+from llm_safe_pl.errors import InputSizeError
 from llm_safe_pl.models import AnonymizeResult, Mapping, Match
 from llm_safe_pl.strategies import Strategy
 
@@ -36,11 +37,14 @@ class Shield:
         detectors: Custom detector list (default: ``DEFAULT_DETECTORS``).
         mapping: Preloaded Mapping (default: empty Mapping).
         strategy: Anonymization strategy (only ``TOKEN`` in v0.1).
-        max_input_bytes: If set, ``anonymize``/``detect`` raise ``ValueError``
-            for inputs whose UTF-8 byte length exceeds this. Default ``None``
-            (unlimited). Recommended for hardened pipelines that ingest
-            untrusted text — ``Shield.anonymize`` allocates O(n) memory in
-            input size, so an unbounded input is a DoS vector.
+        max_input_bytes: If set, ``anonymize``/``detect`` raise
+            :class:`~llm_safe_pl.errors.InputSizeError` for inputs whose UTF-8
+            byte length exceeds this. ``InputSizeError`` subclasses
+            ``ValueError`` so existing ``except ValueError`` code keeps
+            catching it. Default ``None`` (unlimited). Recommended for
+            hardened pipelines that ingest untrusted text — ``Shield.anonymize``
+            allocates O(n) memory in input size, so an unbounded input is a
+            DoS vector.
     """
 
     def __init__(
@@ -84,7 +88,7 @@ class Shield:
             return
         size = len(text.encode("utf-8"))
         if size > self._max_input_bytes:
-            raise ValueError(f"input is {size} bytes; max_input_bytes={self._max_input_bytes}")
+            raise InputSizeError(f"input is {size} bytes; max_input_bytes={self._max_input_bytes}")
 
     def anonymize(self, text: str) -> AnonymizeResult:
         self._check_input_size(text)

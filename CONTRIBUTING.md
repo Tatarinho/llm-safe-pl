@@ -53,6 +53,30 @@ Python 3.10 or newer is required.
 4. Push the branch and open a pull request against `main`.
 5. CI runs on every push. Please address failures before asking for review.
 
+## Adding to the regression corpus
+
+The regression corpus under `tests/corpora/` is the ground truth for detector
+precision and recall. Adding samples is the cheapest way to harden coverage.
+
+Layout:
+
+- `tests/corpora/pl_pii_positive/<name>.txt` — source text containing PII.
+- `tests/corpora/pl_pii_positive/<name>.json` — list of objects with
+  `{type, start, end, value}` covering every span the default `Shield()`
+  must detect. Spans must not overlap.
+- `tests/corpora/pl_pii_negative/<name>.txt` — source text that must produce
+  zero matches under the default `Shield()`.
+- `tests/corpora/pl_pii_negative/<name>.json` — empty list, or omit the file
+  entirely.
+
+Naming: lowercase, snake_case, prefix with `sampleNN_` for sort order.
+Character offsets are Python string indices (not UTF-8 bytes); negative
+samples should not include strings the *current* detectors flag — wait until
+the relevant fix lands before promoting an aspirational negative.
+
+After adding samples, run `pytest tests/test_corpus.py -v`. The loader checks
+that every labeled span actually matches its `value` in the source text.
+
 ## Commit and PR style
 
 - Write commit messages in the imperative mood ("Add PESEL validator", not "Added").
