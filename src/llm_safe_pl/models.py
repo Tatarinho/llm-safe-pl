@@ -60,7 +60,7 @@ class Mapping:
     that owns it) across threads unless the caller serializes writes.
     """
 
-    __slots__ = ("_forward", "_reverse", "_counters")
+    __slots__ = ("_counters", "_forward", "_reverse")
 
     SCHEMA_VERSION = 1
 
@@ -150,9 +150,7 @@ class Mapping:
                 raise ValueError(f"token {token!r} does not match [TYPE_NNN] shape")
             token_type_prefix = shape.group(1)
             if token_type_prefix != pii_type.value.upper():
-                raise ValueError(
-                    f"token {token!r} prefix does not match type {pii_type.value!r}"
-                )
+                raise ValueError(f"token {token!r} prefix does not match type {pii_type.value!r}")
             counter_n = int(shape.group(2))
             prev = max_per_type.get(pii_type, 0)
             if counter_n > prev:

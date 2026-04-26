@@ -35,9 +35,7 @@ class Detector(ABC):
             return  # the abstract regex helper isn't a concrete detector
         for required in ("pii_type", "name"):
             if not hasattr(cls, required):
-                raise TypeError(
-                    f"{cls.__name__} must define class variable {required!r}"
-                )
+                raise TypeError(f"{cls.__name__} must define class variable {required!r}")
 
     @abstractmethod
     def detect(self, text: str) -> Iterator[Match]:

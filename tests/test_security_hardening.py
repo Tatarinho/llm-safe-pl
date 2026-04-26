@@ -13,12 +13,11 @@ from typing import ClassVar
 import pytest
 
 from llm_safe_pl.anonymizer import Anonymizer
-from llm_safe_pl.detectors.base import Detector, RegexDetector
+from llm_safe_pl.detectors.base import RegexDetector
 from llm_safe_pl.detectors.pesel import PeselDetector
 from llm_safe_pl.models import Mapping, PIIType
 from llm_safe_pl.shield import Shield
 from llm_safe_pl.strategies import Strategy
-
 
 # ---- Mapping.from_dict validation ------------------------------------------
 
@@ -121,8 +120,10 @@ class TestAnonymizerConstructor:
     def test_rejects_unimplemented_strategy(self) -> None:
         # Forge an enum-like value that isn't TOKEN.
         with pytest.raises(ValueError, match="not implemented"):
+
             class _Fake:
                 pass
+
             Anonymizer(
                 detectors=[PeselDetector()],
                 mapping=Mapping(),
@@ -191,6 +192,7 @@ class TestShieldHardening:
 class TestDetectorInitSubclass:
     def test_concrete_detector_without_pii_type_rejected(self) -> None:
         with pytest.raises(TypeError, match="pii_type"):
+
             class _Bad(RegexDetector):
                 # Missing pii_type intentionally
                 name: ClassVar[str] = "bad"
@@ -198,6 +200,7 @@ class TestDetectorInitSubclass:
 
     def test_concrete_detector_without_name_rejected(self) -> None:
         with pytest.raises(TypeError, match="name"):
+
             class _Bad(RegexDetector):
                 pii_type: ClassVar[PIIType] = PIIType.PESEL
                 # Missing name intentionally

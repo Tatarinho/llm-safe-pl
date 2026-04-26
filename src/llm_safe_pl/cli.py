@@ -94,7 +94,8 @@ def anonymize_cmd(
         Path, typer.Option("--mapping", "-m", help="Path to write the Mapping JSON.")
     ],
     force: Annotated[
-        bool, typer.Option("--force", "-f", help="Overwrite output and mapping files if they exist.")
+        bool,
+        typer.Option("--force", "-f", help="Overwrite output and mapping files if they exist."),
     ] = False,
     max_bytes: Annotated[
         int, typer.Option("--max-bytes", help="Refuse inputs larger than this many bytes.")

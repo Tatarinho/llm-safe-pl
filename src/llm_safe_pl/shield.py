@@ -84,9 +84,7 @@ class Shield:
             return
         size = len(text.encode("utf-8"))
         if size > self._max_input_bytes:
-            raise ValueError(
-                f"input is {size} bytes; max_input_bytes={self._max_input_bytes}"
-            )
+            raise ValueError(f"input is {size} bytes; max_input_bytes={self._max_input_bytes}")
 
     def anonymize(self, text: str) -> AnonymizeResult:
         self._check_input_size(text)

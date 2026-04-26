@@ -1,6 +1,7 @@
 """Tests for the Anonymizer orchestrator."""
 
 import re
+from itertools import pairwise
 from typing import ClassVar
 
 import pytest
@@ -254,7 +255,7 @@ class TestAnonymizerOverlapResolutionStress:
         matches = anon.detect(text)
         assert len(matches) == 1000
         # All non-overlapping
-        for a, b in zip(matches, matches[1:], strict=False):
+        for a, b in pairwise(matches):
             assert a.end <= b.start
 
     def test_hundred_identical_span_matches_collapse_to_one(self) -> None:
