@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+> No further releases planned. `llm-safe-pl` is end-of-life as of v0.2.1.
+> Code merged to `main` after v0.2.1 (typed exception hierarchy in
+> `llm_safe_pl.errors`, regression-corpus scaffolding under `tests/corpora/`,
+> typed errors raised from `Mapping.from_dict` / `Shield.anonymize`) is
+> preserved in the source tree but will not ship to PyPI. Equivalent
+> functionality lives in [`pii-veil`](https://pypi.org/project/pii-veil/) and
+> [`pii-core`](https://pypi.org/project/pii-core/).
+
 ## [0.2.1] - 2026-04-29
 
 Final release. `llm-safe-pl` is deprecated and will receive no further updates.

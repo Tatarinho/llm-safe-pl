@@ -4,19 +4,37 @@ import llm_safe_pl
 
 
 def test_public_api_exports_are_importable() -> None:
-    from llm_safe_pl import AnonymizeResult, Mapping, Match, PIIType, Shield
+    from llm_safe_pl import (
+        AnonymizeResult,
+        DetectorError,
+        InputSizeError,
+        LlmSafeError,
+        Mapping,
+        MappingError,
+        Match,
+        PIIType,
+        Shield,
+    )
 
     assert Shield is not None
     assert Match is not None
     assert Mapping is not None
     assert AnonymizeResult is not None
     assert PIIType is not None
+    assert LlmSafeError is not None
+    assert MappingError is not None
+    assert InputSizeError is not None
+    assert DetectorError is not None
 
 
 def test_all_matches_expected_surface() -> None:
     assert set(llm_safe_pl.__all__) == {
         "AnonymizeResult",
+        "DetectorError",
+        "InputSizeError",
+        "LlmSafeError",
         "Mapping",
+        "MappingError",
         "Match",
         "PIIType",
         "Shield",

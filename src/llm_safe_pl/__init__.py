@@ -15,6 +15,7 @@ import warnings
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as _version
 
+from llm_safe_pl.errors import DetectorError, InputSizeError, LlmSafeError, MappingError
 from llm_safe_pl.models import AnonymizeResult, Mapping, Match, PIIType
 from llm_safe_pl.shield import Shield
 
@@ -37,7 +38,11 @@ except PackageNotFoundError:
 
 __all__ = [
     "AnonymizeResult",
+    "DetectorError",
+    "InputSizeError",
+    "LlmSafeError",
     "Mapping",
+    "MappingError",
     "Match",
     "PIIType",
     "Shield",
