@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "llm-safe-pl"
-version = "0.2.0"
-description = "Reversible PII anonymization for Polish documents, designed for LLM workflows."
+version = "0.2.1"
+description = "DEPRECATED — use pii-veil + pii-core instead. Reversible PII anonymization for Polish documents."
 readme = "README.md"
 license = "MIT"
 license-files = ["LICENSE"]
@@ -27,7 +27,7 @@ keywords = [
     "anthropic",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 7 - Inactive",
     "Intended Audience :: Developers",
     "Natural Language :: Polish",
     "Operating System :: OS Independent",
@@ -76,6 +76,7 @@ include = [
     "tests",
     "README.md",
     "CHANGELOG.md",
+    "MIGRATION.md",
     "LICENSE",
 ]
 

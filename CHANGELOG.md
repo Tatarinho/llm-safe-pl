@@ -7,15 +7,46 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added
+> No further releases planned. `llm-safe-pl` is end-of-life as of v0.2.1.
+> Code merged to `main` after v0.2.1 (typed exception hierarchy in
+> `llm_safe_pl.errors`, regression-corpus scaffolding under `tests/corpora/`,
+> typed errors raised from `Mapping.from_dict` / `Shield.anonymize`) is
+> preserved in the source tree but will not ship to PyPI. Equivalent
+> functionality lives in [`pii-veil`](https://pypi.org/project/pii-veil/) and
+> [`pii-core`](https://pypi.org/project/pii-core/).
 
-- `llm_safe_pl.errors` module with typed exception hierarchy: `LlmSafeError` (base), `MappingError` and `InputSizeError` (both also subclass `ValueError` for backwards compatibility), and `DetectorError` (also subclass of `RuntimeError`). All four are re-exported from the top-level package. See `docs/errors.md`.
-- `tests/corpora/` regression-corpus scaffolding with `pl_pii_positive/` and `pl_pii_negative/` directories. `tests/test_corpus.py` discovers `.txt`/`.json` pairs at collection time and asserts current detector behavior — adding more samples strengthens regression coverage without changing test code.
+## [0.2.1] - 2026-04-29
+
+Final release. `llm-safe-pl` is deprecated and will receive no further updates.
+
+The work continues in the [`pii-toolkit`](https://github.com/Tatarinho/pii-toolkit)
+family on PyPI:
+
+- [`pii-veil`](https://pypi.org/project/pii-veil/) — reversible anonymization
+  for LLM workflows (successor to `Shield` / `Anonymizer`).
+- [`pii-core`](https://pypi.org/project/pii-core/) — multi-language detection
+  and checksum validation (successor to `llm_safe_pl.detectors` and
+  `llm_safe_pl.validators`).
+- [`pii-presidio`](https://pypi.org/project/pii-presidio/) — Microsoft Presidio
+  plugin with multi-language recognizers.
+
+See [`MIGRATION.md`](MIGRATION.md) for the symbol-by-symbol migration map.
 
 ### Changed
 
-- `Mapping.from_dict` / `from_json` now raise `MappingError` instead of bare `ValueError` (the new class still catches as `ValueError`, so existing handlers keep working).
-- `Shield.anonymize` / `detect` raise `InputSizeError` instead of bare `ValueError` when input exceeds `max_input_bytes` (still catches as `ValueError`).
+- `import llm_safe_pl` now emits a `DeprecationWarning` pointing to the
+  successor packages and the migration guide. The 0.2.0 API surface is
+  unchanged — existing pinned installs keep working without code changes.
+- `Development Status` classifier moved from `3 - Alpha` to `7 - Inactive`.
+- Package description and README rewritten with a deprecation banner and
+  migration links.
+
+### Added
+
+- `MIGRATION.md` — symbol-by-symbol map from `llm_safe_pl.*` to the
+  `pii-toolkit` packages.
+- `tests/test_deprecation.py` — asserts the import-time
+  `DeprecationWarning` fires.
 
 ## [0.2.0] - 2026-04-26
 
